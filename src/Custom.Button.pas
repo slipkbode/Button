@@ -45,6 +45,8 @@ type
 
   TButtonEffectList = TArray<TButtonEffect>;
 
+  procedure Register;
+
 implementation
 
 uses
@@ -196,7 +198,12 @@ end;
 procedure TButtonEffect.DoPaint;
 begin
   inherited;
-  Self.Canvas.Fill.Color := Self.TextSettings.FontColor;
+  Self.Canvas.Fill.Color    := Self.TextSettings.FontColor;
+  Self.Canvas.Font.Family   := Self.TextSettings.Font.Family;
+  Self.Canvas.Font.Size     := Self.TextSettings.Font.Size;
+  Self.Canvas.Font.Style    := Self.TextSettings.Font.Style;
+  Self.Canvas.Font.StyleExt := Self.TextSettings.Font.StyleExt;
+
   Self.Canvas.FillText(Self.GetShapeRect, Self.Text, Self.TextSettings.WordWrap, 1, [TFillTextFlag.RightToLeft], Self.TextSettings.HorzAlign,
     Self.TextSettings.VertAlign);
 
@@ -207,6 +214,11 @@ end;
 function TButtonEffect.GetTextSettings: TTextSettings;
 begin
   Result := FTextSettingsInfo.TextSettings;
+end;
+
+procedure Register;
+begin
+  RegisterComponents('Custom Components', [TButtonEffect]);
 end;
 
 procedure TButtonEffect.SetTextSettings(const Value: TTextSettings);
