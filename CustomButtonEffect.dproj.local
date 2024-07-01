@@ -3,9 +3,9 @@
 	<Transactions>
     <Transaction>2024/06/14 15:15:23.000.835,=rtl.dcp</Transaction>
     <Transaction>2024/06/17 09:57:31.000.075,=rtl.dcp</Transaction>
-    <Transaction>2024/06/17 09:57:50.000.858,C:\Users\slipk\Documents\Embarcadero\Studio\Projects\Package1.dproj=C:\Users\slipk\Documents\Embarcadero\Studio\Projects\CustomButtonEffect.dproj</Transaction>
+    <Transaction>2024/06/17 09:57:50.000.858,C:\Users\slipk\Documents\Embarcadero\Studio\Projects\CustomButtonEffect.dproj=C:\Users\slipk\Documents\Embarcadero\Studio\Projects\Package1.dproj</Transaction>
     <Transaction>2024/06/17 09:58:09.000.593,=Y:\Custom\Button\src\Custom.Button.pas</Transaction>
     <Transaction>2024/06/17 10:00:27.000.861,=fmx.dcp</Transaction>
-    <Transaction>2024/06/17 10:01:05.000.722,C:\Users\slipk\Documents\Embarcadero\Studio\Projects\CustomButtonEffect.dproj=Y:\Custom\Button\CustomButtonEffect.dproj</Transaction>
+    <Transaction>2024/06/17 10:01:05.000.722,Y:\Custom\Button\CustomButtonEffect.dproj=C:\Users\slipk\Documents\Embarcadero\Studio\Projects\CustomButtonEffect.dproj</Transaction>
   </Transactions>
 </BorlandProject>
