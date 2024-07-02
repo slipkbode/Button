@@ -42,6 +42,7 @@ type
     destructor Destroy; override;
 
     procedure ForceColor;
+    procedure BeforeDestruction; override;
 
   published
     property Text             : String read FText write FText;
@@ -96,22 +97,30 @@ begin
           case TypeEffect of
             Border:
               begin
-                TAnimator.AnimateFloat(Self, 'Stroke.Thickness', 2.5);
+                TAnimator.AnimateFloat(Self, 'Stroke.Thickness', 2.5, 0.1);
               end;
             TTypeEffect.Text:
               begin
-                TAnimator.AnimateColor(Self, 'TextSettings.FontColor', Self.EffectTextColor);
+                TAnimator.AnimateColor(Self, 'TextSettings.FontColor', Self.EffectTextColor, 0.1);
               end;
             ColorButton:
               begin
-                TAnimator.AnimateColor(Self, 'Fill.Color', Self.EffectButtonColor);
-                TAnimator.AnimateFloat(Self, 'Stroke.Thickness', 2.5);
+                TAnimator.AnimateColor(Self, 'Fill.Color', Self.EffectButtonColor, 0.1);
+                TAnimator.AnimateFloat(Self, 'Stroke.Thickness', 2.5, 0.1);
               end;
           end;
         end
       )
     end
   )
+end;
+
+procedure TButtonEffect.BeforeDestruction;
+begin
+  inherited;
+  TAnimator.StopPropertyAnimation(Self, 'Stroke.Thickness');
+  TAnimator.StopPropertyAnimation(Self, 'Fill.Color');
+  TAnimator.StopPropertyAnimation(Self, 'TextSettings.FontColor');
 end;
 
 constructor TButtonEffect.Create(AOwner: TComponent);
@@ -148,17 +157,17 @@ begin
           case TypeEffect of
             Border:
               begin
-                TAnimator.AnimateFloat(Self, 'Stroke.Thickness', 0);
+                TAnimator.AnimateFloat(Self, 'Stroke.Thickness', 0, 0.1);
               end;
             TTypeEffect.Text:
               begin
-                TAnimator.AnimateColor(Self, 'TextSettings.FontColor', FFontColorDefault);
+                TAnimator.AnimateColor(Self, 'TextSettings.FontColor', FFontColorDefault, 0.1);
               end;
             ColorButton:
               begin
-                TAnimator.AnimateColor(Self, 'Fill.Color', FButtonColorDefault);
+                TAnimator.AnimateColor(Self, 'Fill.Color', FButtonColorDefault, 0.1);
                 if not Self.IsFocused then
-                  TAnimator.AnimateFloat(Self, 'Stroke.Thickness', 0);
+                  TAnimator.AnimateFloat(Self, 'Stroke.Thickness', 0, 0.1);
               end;
           end;
         end
