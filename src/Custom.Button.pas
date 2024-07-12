@@ -148,6 +148,9 @@ end;
 
 procedure TButtonEffect.DeactiveEffect;
 begin
+  if csDestroying in Self.ComponentState then
+    Exit;
+
   TTask.Run(
     procedure
     begin
