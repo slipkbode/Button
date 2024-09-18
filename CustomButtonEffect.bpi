@@ -1,3 +1,0 @@
-/* 'CustomButtonEffect' Package */
-OUTPUT_FORMAT(macho-arm64)
-GROUP ( bplCustomButtonEffect.dylib CustomButtonEffect_nonshared.a )
