@@ -71,6 +71,9 @@ type
     function GetStyledSettings: TStyledSettings;
     function StyledSettingsStored: Boolean;
     function GetTextSettings: TTextSettings;
+    procedure CreateFloatAnimation;
+    procedure CreateColorAnimation;
+    procedure CreateListBox;
 
   protected
     procedure DoPaint; override;
@@ -137,33 +140,41 @@ type
 
 procedure TButtonEffect.ActiveEffect;
 begin
-  case TypeEffect of
-    Border:
-      begin
-        FFloatAnimation.PropertyName := 'Stroke.Thickness';
-        FFloatAnimation.Duration     := 0.1;
-        FFloatAnimation.StopValue    := 2.5;
-        FFloatAnimation.Start;
+  CreateFloatAnimation;
+  CreateColorAnimation;
+
+  TThread.Synchronize(nil,
+    procedure
+    begin
+      case TypeEffect of
+        Border:
+          begin
+            FFloatAnimation.PropertyName := 'Stroke.Thickness';
+            FFloatAnimation.Duration     := 0.1;
+            FFloatAnimation.StopValue    := 2.5;
+            FFloatAnimation.Start;
+          end;
+        TTypeEffect.Text:
+          begin
+            FColorAnimation.PropertyName := 'TextSettings.FontColor';
+            FColorAnimation.Duration     := 0.1;
+            FColorAnimation.StopValue    := Self.EffectTextColor;
+            FColorAnimation.Start;
+          end;
+        ColorButton:
+          begin
+            FColorAnimation.PropertyName := 'Fill.Color';
+            FColorAnimation.Duration     := 0.1;
+            FColorAnimation.StopValue    := Self.EffectButtonColor;
+            FColorAnimation.Start;
+            FFloatAnimation.PropertyName := 'Stroke.Thickness';
+            FFloatAnimation.Duration     := 0.1;
+            FFloatAnimation.StopValue    := 2.5;
+            FFloatAnimation.Start;
+          end;
       end;
-    TTypeEffect.Text:
-      begin
-        FColorAnimation.PropertyName := 'TextSettings.FontColor';
-        FColorAnimation.Duration     := 0.1;
-        FColorAnimation.StopValue    := Self.EffectTextColor;
-        FColorAnimation.Start;
-      end;
-    ColorButton:
-      begin
-        FColorAnimation.PropertyName := 'Fill.Color';
-        FColorAnimation.Duration     := 0.1;
-        FColorAnimation.StopValue    := Self.EffectButtonColor;
-        FColorAnimation.Start;
-        FFloatAnimation.PropertyName := 'Stroke.Thickness';
-        FFloatAnimation.Duration     := 0.1;
-        FFloatAnimation.StopValue    := 2.5;
-        FFloatAnimation.Start;
-      end;
-  end;
+    end
+  )
 end;
 
 procedure TButtonEffect.BeforeDestruction;
@@ -172,6 +183,47 @@ begin
   TAnimator.StopPropertyAnimation(Self, 'Stroke.Thickness');
   TAnimator.StopPropertyAnimation(Self, 'Fill.Color');
   TAnimator.StopPropertyAnimation(Self, 'TextSettings.FontColor');
+end;
+
+procedure TButtonEffect.CreateListBox;
+begin
+  if FMultiView = nil then
+  begin
+    FMultiView                := TMultiView.Create(nil);
+    FMultiView.Mode           := TMultiViewMode.Popover;
+    FMultiView.OnStartShowing := Self.OnStartShowing;
+    FList                     := TListBox.Create(nil);
+    FList.Parent              := FMultiView;
+    FList.Align               := TAlignLayout.Contents;
+    FList.StyleLookup         := 'transparentlistboxstyle';
+    FList.OnItemClick         := OnItemClick;
+    FList.ItemHeight          := 30;
+    FList.Cursor              := crHandPoint;
+    FList.SetSubComponent(True);
+    FMultiView.SetSubComponent(True);
+  end;
+end;
+
+procedure TButtonEffect.CreateColorAnimation;
+begin
+  if FColorAnimation = nil then
+  begin
+    FColorAnimation := TColorAnimation.Create(Self);
+    FColorAnimation.Parent := Self;
+    FColorAnimation.StartFromCurrent := True;
+    FColorAnimation.SetSubComponent(True);
+  end;
+end;
+
+procedure TButtonEffect.CreateFloatAnimation;
+begin
+  if FFloatAnimation = nil then
+  begin
+    FFloatAnimation := TFloatAnimation.Create(Self);
+    FFloatAnimation.Parent := Self;
+    FFloatAnimation.StartFromCurrent := True;
+    FFloatAnimation.SetSubComponent(True);
+  end;
 end;
 
 constructor TButtonEffect.Create(AOwner: TComponent);
@@ -186,7 +238,7 @@ begin
   Self.Cursor                      := crHandPoint;
   Self.Height                      := 55;
   Self.Width                       := 55;
-  Self.Text                        := 'Button';
+
   FShowTextItemSelected            := True;
   FTextSettingsInfo                := TTextControlSettingsInfo.Create(Self, TTextControlTextSettings);
   Self.TextSettings.FontColor      := TAlphaColorRec.White;
@@ -197,61 +249,48 @@ begin
   FFontColorDefault                := TAlphaColorRec.Null;
   FButtonColorDefault              := TAlphaColorRec.Null;
   FDropDown                        := TButtonDropDown.Create(TButtonDropDownItem);
-  FMultiView                       := TMultiView.Create(nil);
-  FMultiView.Mode                  := TMultiViewMode.Popover;
-  FMultiView.OnStartShowing        := Self.OnStartShowing;
-  FList                            := TListBox.Create(nil);
-  FList.Parent                     := FMultiView;
-  FList.Align                      := TAlignLayout.Contents;
-  FList.StyleLookup                := 'transparentlistboxstyle';
-  FList.OnItemClick                := OnItemClick;
-  FList.ItemHeight                 := 30;
-  FList.Cursor                     := crHandPoint;
-  FFloatAnimation                  := TFloatAnimation.Create(Self);
-  FFloatAnimation.Parent           := Self;
-  FFloatAnimation.StartFromCurrent := True;
-  FColorAnimation                  := TColorAnimation.Create(Self);
-  FColorAnimation.Parent           := Self;
-  FColorAnimation.StartFromCurrent := True;
-
-  FColorAnimation.SetSubComponent(True);
-  FFloatAnimation.SetSubComponent(True);
-  FList.SetSubComponent(True);
-  FMultiView.SetSubComponent(True);
 end;
 
 procedure TButtonEffect.DeactiveEffect;
 begin
-  if csDestroying in Self.ComponentState then
+  if (csDestroying in Self.ComponentState) or (Self.IsFocused) then
     Exit;
 
-  case TypeEffect of
-    Border:
-      begin
-        FFloatAnimation.PropertyName := 'Stroke.Thickness';
-        FFloatAnimation.Duration     := 0.1;
-        FFloatAnimation.StopValue    := 0;
-        FFloatAnimation.Start;
+  CreateFloatAnimation;
+  CreateColorAnimation;
+
+  TThread.Synchronize(nil,
+    procedure
+    begin
+      case TypeEffect of
+        Border:
+          begin
+            FFloatAnimation.PropertyName := 'Stroke.Thickness';
+            FFloatAnimation.Duration     := 0.1;
+            FFloatAnimation.StopValue    := 0;
+            FFloatAnimation.Start;
+          end;
+        TTypeEffect.Text:
+          begin
+            FColorAnimation.PropertyName := 'TextSettings.FontColor';
+            FColorAnimation.Duration     := 0.1;
+            FColorAnimation.StopValue    := FFontColorDefault;
+            FColorAnimation.Start;
+          end;
+        ColorButton:
+          begin
+            FColorAnimation.PropertyName := 'Fill.Color';
+            FColorAnimation.Duration     := 0.1;
+            FColorAnimation.StopValue    := FButtonColorDefault;
+            FColorAnimation.Start;
+            FFloatAnimation.PropertyName := 'Stroke.Thickness';
+            FFloatAnimation.Duration     := 0.1;
+            FFloatAnimation.StopValue    := 0;
+            FFloatAnimation.Start;
+          end;
       end;
-    TTypeEffect.Text:
-      begin
-        FColorAnimation.PropertyName := 'TextSettings.FontColor';
-        FColorAnimation.Duration     := 0.1;
-        FColorAnimation.StopValue    := FFontColorDefault;
-        FColorAnimation.Start;
-      end;
-    ColorButton:
-      begin
-        FColorAnimation.PropertyName := 'Fill.Color';
-        FColorAnimation.Duration     := 0.1;
-        FColorAnimation.StopValue    := FButtonColorDefault;
-        FColorAnimation.Start;
-        FFloatAnimation.PropertyName := 'Stroke.Thickness';
-        FFloatAnimation.Duration     := 0.1;
-        FFloatAnimation.StopValue    := 0;
-        FFloatAnimation.Start;
-      end;
-  end;
+    end
+  )
 end;
 
 destructor TButtonEffect.Destroy;
@@ -259,7 +298,6 @@ begin
   FreeAndNil(FTextSettingsInfo);
   FDropDown.Free;
   FIconDropDown.Free;
-  FList.Clear;
   FreeAndNil(FList);
   FreeAndNil(FMultiView);
   FFloatAnimation.Free;
@@ -324,8 +362,11 @@ begin
     end;
   end;
 
-  Self.Canvas.FillText(LRect, Self.Text, Self.TextSettings.WordWrap, Self.Opacity, [TFillTextFlag.RightToLeft], Self.TextSettings.HorzAlign,
-    Self.TextSettings.VertAlign);
+  if not Self.Text.Trim.IsEmpty then
+  begin
+    Self.Canvas.FillText(LRect, Self.Text, Self.TextSettings.WordWrap, Self.Opacity, [TFillTextFlag.RightToLeft], Self.TextSettings.HorzAlign,
+      Self.TextSettings.VertAlign);
+  end;
 
   NewSize;
 end;
@@ -335,11 +376,15 @@ begin
   inherited;
   if (FButtonColorDefault = TAlphaColorRec.Null) then
     FButtonColorDefault := Self.Fill.Color;
+
+  if (FFontColorDefault = TAlphaColorRec.Null) and (FTextSettingsInfo <> nil) then
+    FFontColorDefault := Self.TextSettings.FontColor;
 end;
 
 procedure TButtonEffect.ForceColor;
 begin
   FButtonColorDefault := Self.Fill.Color;
+  FFontColorDefault   := Self.TextSettings.FontColor;
 end;
 
 function TButtonEffect.GetStyledSettings: TStyledSettings;
@@ -370,6 +415,7 @@ begin
   inherited;
   if (Self.Style = TButtonStyle.DropDown) and ((X >= (Self.Width - 25)) and (X <= Self.Width)) then
   begin
+    CreateListBox;
     if FShowMaster then
     begin
       FMultiView.HideMaster;
@@ -470,9 +516,6 @@ end;
 procedure TButtonEffect.SetTextSettings(const Value: TTextSettings);
 begin
   FTextSettingsInfo.TextSettings.Assign(Value);
-
-  if FFontColorDefault = TAlphaColorRec.Null then
-    FFontColorDefault := Value.FontColor;
 end;
 
 function TButtonEffect.StyledSettingsStored: Boolean;
