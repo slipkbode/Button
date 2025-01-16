@@ -10,5 +10,6 @@
     <Transaction>2024/09/15 12:14:27.000.597,=Y:\Custom\Button\Unit2.pas</Transaction>
     <Transaction>2024/09/15 12:14:40.000.796,Y:\Custom\Button\Custom.Button.Image.pas=Y:\Custom\Button\Unit2.pas</Transaction>
     <Transaction>2024/09/15 12:15:53.000.885,Y:\Custom\Button\src\Custom.Button.Image.pas=Y:\Custom\Button\Custom.Button.Image.pas</Transaction>
-  </Transactions>
+  </Transactions>  <ActiveMobileDevice>   <PMac iOSDevice64="_iosdevicectl_00008020-000D583C0A21002E"/>
+  </ActiveMobileDevice>
 </BorlandProject>

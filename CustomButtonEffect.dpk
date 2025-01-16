@@ -29,7 +29,9 @@ package CustomButtonEffect;
 
 requires
   rtl,
-  fmx;
+  fmx,
+  Skia.Package.RTL,
+  Skia.Package.FMX;
 
 contains
   Custom.Button in 'src\Custom.Button.pas',

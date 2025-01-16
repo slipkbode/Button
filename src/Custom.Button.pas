@@ -4,11 +4,12 @@ interface
 
 uses FMX.Objects, System.Classes, FMX.Graphics, System.UITypes, FMX.Types,
   FMX.Controls, Custom.Button.Image, System.Types, FMX.MultiView, FMX.ListBox,
-  FMX.Ani;
+  FMX.Ani, FMX.Skia;
 
 type
   TTypeEffect = (Border, Text, ColorButton);
   TButtonStyle = (Buttom, DropDown);
+  TButtonEffectSvgAlign = (Left, Rigth, Top, Bottom, Center);
 
   TButtonDropDownItem = class(TCollectionItem)
   private
@@ -37,6 +38,17 @@ type
   TButtonOnDropDownChange = procedure(const ASender: TObject; const AItemSelected: TListBoxItem) of object;
   TButtonOnBeforeDropDownItem = procedure(const AItem: TListBoxItem) of object;
 
+  TButtonEffectSvgBrush = class(TSkSvgBrush)
+  private
+    FSize: TControlSize;
+    FAlign: TButtonEffectSvgAlign;
+  published
+    property Size: TControlSize read FSize write FSize;
+    property Align: TButtonEffectSvgAlign read FAlign write FAlign;
+  public
+    constructor Create; reintroduce;
+  end;
+
   TButtonEffect = class(TRectangle)
   private
     FText, FTextOriginal : String;
@@ -58,6 +70,7 @@ type
     FShowTextItemSelected: Boolean;
     FFloatAnimation      : TFloatAnimation;
     FColorAnimation      : TColorAnimation;
+    FSVG                 : TButtonEffectSvgBrush;
 
     procedure SetTextSettings(const Value: TTextSettings);
     procedure ActiveEffect;
@@ -104,6 +117,7 @@ type
     property OnDropDownChange    : TButtonOnDropDownChange read FOnDropDownChange write FOnDropDownChange;
     property OnBeforeDropDownItem: TButtonOnBeforeDropDownItem read FOnBeforeDropDownItem write FOnBeforeDropDownItem;
     property ShowTextItemSelected: Boolean read FShowTextItemSelected write FShowTextItemSelected;
+    property Svg                 : TButtonEffectSvgBrush read FSVG write FSVG;
   end;
 
   TButtonEffectList = TArray<TButtonEffect>;
@@ -114,7 +128,7 @@ implementation
 
 uses
   FMX.StdCtrls, System.SysUtils, FMX.Consts, FMX.TextLayout,
-  System.Threading, System.NetEncoding;
+  System.Threading, System.NetEncoding, System.Skia, System.Skia.API;
 
 type
   TTextControlSettingsInfo = class(TTextSettingsInfo)
@@ -134,6 +148,9 @@ type
   published
     property Font;
     property FontColor;
+    property WordWrap;
+    property VertAlign;
+    property HorzAlign;
   end;
 
   { TButtonEffect }
@@ -249,6 +266,7 @@ begin
   FFontColorDefault                := TAlphaColorRec.Null;
   FButtonColorDefault              := TAlphaColorRec.Null;
   FDropDown                        := TButtonDropDown.Create(TButtonDropDownItem);
+  FSVG                             := TButtonEffectSvgBrush.Create;
 end;
 
 procedure TButtonEffect.DeactiveEffect;
@@ -302,6 +320,7 @@ begin
   FreeAndNil(FMultiView);
   FFloatAnimation.Free;
   FColorAnimation.Free;
+  FSVG.Free;
   inherited;
 end;
 
@@ -362,9 +381,69 @@ begin
     end;
   end;
 
+  if (Self.Svg <> nil) and (Self.svg.Source <> '') then
+  begin
+    var LSkia    := TSkSvg.Create(nil);
+    var LSvgRect := TRectF.Create(2, 2, Self.Svg.Size.Width, Self.Svg.Size.Height);
+    try
+      LSkia.Svg.Source        := Self.Svg.Source;
+      LSkia.Svg.OverrideColor := Self.Svg.OverrideColor;
+
+      case Self.Svg.Align of
+        TButtonEffectSvgAlign.Left:
+          begin
+            LSvgRect.Left   := 0;
+            LSvgRect.Top    := (Self.Height - Self.Svg.Size.Height) / 2;
+            LSvgRect.Width  := Self.Svg.Size.Width;
+            LSvgRect.Bottom := (Self.Height + Self.Svg.Size.Height) / 2;
+
+            LRect.Left := LRect.Left + LSvgRect.Width;
+          end;
+        TButtonEffectSvgAlign.Rigth:
+         begin
+           LSvgRect.Left   := Self.Width - Self.Svg.Size.Width;
+           LSvgRect.Top    := (Self.Height - Self.Svg.Size.Height) / 2;
+           LSvgRect.Width  := Self.Svg.Size.Width;
+           LSvgRect.Bottom := (Self.Height + Self.Svg.Size.Height) / 2;
+
+           LRect.Right := LRect.Right - LSvgRect.Width;
+         end;
+        TButtonEffectSvgAlign.Top:
+          begin
+            LSvgRect.Left   := (Self.Width - Self.Svg.Size.Width) / 2;
+            LSvgRect.Top    := 0;
+            LSvgRect.Width  := (Self.Width + Self.Svg.Size.Width) / 2;
+            LSvgRect.Bottom := Self.Svg.Size.Height;
+
+           LRect.Top := LRect.Top + LSvgRect.Top + 8;
+          end;
+        TButtonEffectSvgAlign.Bottom:
+          begin
+            LSvgRect.Left   := (Self.Width - Self.Svg.Size.Width) /2;
+            LSvgRect.Top    := (Self.Height - Self.Svg.Size.Height);
+            LSvgRect.Width  := (Self.Height + Self.Svg.Size.Height) / 2;
+            LSvgRect.Bottom := Self.Height;
+
+            LRect.Bottom := LSvgRect.Bottom - 8;
+          end;
+        TButtonEffectSvgAlign.Center:
+          begin
+            LSvgRect.Left   := (Self.Width - Self.Svg.Size.Width) /2;
+            LSvgRect.Top    := (Self.Height - Self.Svg.Size.Height) / 2;
+            LSvgRect.Width  := (Self.Height + Self.Svg.Size.Height) / 2;
+            LSvgRect.Bottom := (Self.Height + Self.Svg.Size.Height) / 2;
+          end;
+      end;
+
+      Self.Canvas.DrawBitmap(LSkia.MakeScreenshot, LSkia.BoundsRect, LSvgRect, Self.Opacity);
+    finally
+      LSkia.Free;
+    end;
+  end;
+
   if not Self.Text.Trim.IsEmpty then
   begin
-    Self.Canvas.FillText(LRect, Self.Text, Self.TextSettings.WordWrap, Self.Opacity, [TFillTextFlag.RightToLeft], Self.TextSettings.HorzAlign,
+    Self.Canvas.FillText(LRect, Self.Text, Self.TextSettings.WordWrap, Self.Opacity, [], Self.TextSettings.HorzAlign,
       Self.TextSettings.VertAlign);
   end;
 
@@ -563,6 +642,14 @@ begin
 
   if FName.Trim.IsEmpty then
     Result := Self.ClassName + Self.Index.ToString;
+end;
+
+{ TButtonEffectSvgBrush }
+
+constructor TButtonEffectSvgBrush.Create;
+begin
+  inherited Create;
+  FSize      := TControlSize.Create(TSizeF.Create(36, 36));
 end;
 
 end.
